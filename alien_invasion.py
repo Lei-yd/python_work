@@ -3,6 +3,8 @@ from time import sleep
 
 import pygame
 
+from pathlib import Path
+
 from settings import Settings
 from ship import Ship
 from bullet import Bullet
@@ -41,6 +43,10 @@ class AlienInvasion:
         self._make_difficulty_buttons()
 
         self.game_active = False
+
+    def _write_history_high_score(self):
+        path = Path('history_high_score.txt')
+        path.write_text(str(self.starts.high_score))
 
     def _make_difficulty_buttons(self):
         """Make buttons that allow player to select difficulty level."""
@@ -85,9 +91,7 @@ class AlienInvasion:
         # 重置游戏的统计信息
         self.settings.initialize_dynamic_settings()
         self.starts.reset_starts()
-        self.sb.prep_score()
-        self.sb.prep_level()
-        self.sb.prep_ships()
+        self.sb.prep_images()
         self.game_active = True
 
         # 清空外星人列表和子弹列表
@@ -104,6 +108,7 @@ class AlienInvasion:
         """响应键盘和鼠标事件"""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                self._write_history_high_score()
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
                 self._check_keydown_events(event)
@@ -129,6 +134,7 @@ class AlienInvasion:
         elif event.key == pygame.K_p and not self.game_active:
             self._start_game()
         elif event.key == pygame.K_q:
+            self._write_history_high_score()
             sys.exit()
 
     def _check_keyup_events(self, event):
@@ -170,15 +176,19 @@ class AlienInvasion:
                 self.starts.score += self.settings.alien_points * len(aliens)
                 self.sb.prep_score()
                 self.sb.check_high_score()
-        
+
         if not self.aliens:
-            """删除现有的子弹并创建一个新的外星舰队"""
-            self.bullets.empty()
-            self._create_fleet()
-            self.settings.increase_speed()
-            # 提高等级
-            self.starts.level += 1
-            self.sb.prep_level()
+            self._start_new_level()
+
+    def _start_new_level(self):
+        """删除现有的子弹并创建一个新的外星舰队"""
+        self.bullets.empty()
+        self._create_fleet()
+        self.settings.increase_speed()
+        # 提高等级
+        self.starts.level += 1
+        self.sb.prep_level()
+
 
     def _updat_aliens(self):
         """更新外星人的位置"""
